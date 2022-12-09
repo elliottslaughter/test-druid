@@ -1,22 +1,68 @@
-use druid::widget::{Button, Flex, Label};
-use druid::{AppLauncher, LocalizedString, PlatformError, Widget, WidgetExt, WindowDesc};
+use std::time::{Duration, Instant};
 
-fn main() -> Result<(), PlatformError> {
-    let main_window = WindowDesc::new(ui_builder());
-    let data = 0_u32;
-    AppLauncher::with_window(main_window)
-        .log_to_console()
-        .launch(data)
+use druid::widget::prelude::*;
+use druid::widget::{Button, Flex, Label, Slider};
+use druid::{
+    AppLauncher, Color, Data, Lens, MouseButton, PlatformError, Point, Rect, TimerToken, WidgetExt,
+    WindowDesc,
+};
+use std::sync::Arc;
+
+#[derive(Clone, Data)]
+struct AppData {
+    rects: Arc<Vec<Rect>>,
 }
 
-fn ui_builder() -> impl Widget<u32> {
-    // The label text will be computed dynamically based on the current locale and count
-    let text =
-        LocalizedString::new("hello-counter").with_arg("count", |data: &u32, _env| (*data).into());
-    let label = Label::new(text).padding(5.0).center();
-    let button = Button::new("increment")
-        .on_click(|_ctx, data, _env| *data += 1)
-        .padding(5.0);
+impl AppData {
+    fn new() -> Self {
+        Self {
+            rects: Arc::new(Vec::new()),
+        }
+    }
+}
 
-    Flex::column().with_child(label).with_child(button)
+struct CanvasWidget {
+    timer_id: TimerToken,
+    last_update: Instant,
+}
+
+impl Widget<AppData> for CanvasWidget {
+    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut AppData, _env: &Env) {}
+
+    fn lifecycle(
+        &mut self,
+        _ctx: &mut LifeCycleCtx,
+        _event: &LifeCycle,
+        _data: &AppData,
+        _env: &Env,
+    ) {
+    }
+
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &AppData, data: &AppData, _env: &Env) {}
+
+    fn layout(
+        &mut self,
+        _layout_ctx: &mut LayoutCtx,
+        bc: &BoxConstraints,
+        _data: &AppData,
+        _env: &Env,
+    ) -> Size {
+        bc.max() // fill all available space
+    }
+
+    fn paint(&mut self, ctx: &mut PaintCtx, data: &AppData, _env: &Env) {}
+}
+
+fn make_widget() -> impl Widget<AppData> {
+    CanvasWidget {
+        timer_id: TimerToken::INVALID,
+        last_update: Instant::now(),
+    }
+}
+
+fn main() -> Result<(), PlatformError> {
+    let main_window = WindowDesc::new(make_widget());
+    AppLauncher::with_window(main_window)
+        .log_to_console()
+        .launch(AppData::new())
 }
